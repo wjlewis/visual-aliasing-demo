@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      #content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 600px;
+      }
+
+      canvas {
+        border: 1px solid black;
+      }
+
+      label {
+        align-items: center;
+        display: flex;
+        gap: 16px;
+      }
+      label input {
+        flex: 1;
+      }
+    </style>
+
+    <meta charset="utf-8" />
+    <title>Visual Aliasing</title>
+  </head>
+
+  <body>
+    <h1>Visual Aliasing</h1>
+
+    <div id="content">
+      <canvas width="600" height="300"></canvas>
+
+      <label for="freq"
+        >Frequency:
+        <input
+          type="range"
+          min="0"
+          max="10"
+          step="0.25"
+          value="0.25"
+          id="freq"
+        />
+      </label>
+
+      <label for="sampleFreq"
+        >Sampling Frequency:
+        <input
+          type="range"
+          min="1"
+          max="50"
+          step="1"
+          value="50"
+          id="sampleFreq"
+        />
+      </label>
+    </div>
+
+    <script>
+      const canvas = document.getElementsByTagName('canvas')[0];
+      const freqSlider = document.getElementById('freq');
+      const sampleFreqSlider = document.getElementById('sampleFreq');
+      const ctx = canvas.getContext('2d');
+
+      function drawWheel(ctx, theta, c, r) {
+        const [cx, cy] = c;
+
+        const nSectors = 10;
+        const sectorAngle = (2 * Math.PI) / nSectors;
+
+        for (let i = 0; i < nSectors; i++) {
+          const startAngle = theta + i * sectorAngle;
+          const endAngle = startAngle + sectorAngle;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r, startAngle, endAngle);
+          ctx.fillStyle = i % 2 === 0 ? '#3368c4' : '#ebd63b';
+          ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r / 8, 0, 2 * Math.PI);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+      }
+
+      let theta = 0;
+      let sampleTheta = theta;
+
+      let freq = Number(freqSlider.value);
+      let sampleFreq = Number(sampleFreqSlider.value);
+      let nextSampleAt = 1 / sampleFreq;
+
+      let elapsed = 0;
+      let tPrev = null;
+      function loop(t) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        const deltaT = tPrev === null ? 16 : t - tPrev;
+        elapsed += deltaT / 1_000;
+
+        theta += (2 * Math.PI * freq * deltaT) / 1_000;
+
+        if (elapsed >= nextSampleAt) {
+          nextSampleAt += 1 / sampleFreq;
+          sampleTheta = theta;
+        }
+
+        drawWheel(ctx, theta, [150, 150], 100);
+        drawWheel(ctx, sampleTheta, [450, 150], 100);
+        ctx.fillStyle = '#444';
+        ctx.font = '12px "Source Code Pro"';
+        ctx.fillText(`Freq: ${freq} Hz`, 10, 20);
+        ctx.fillText(`Sample Freq: ${sampleFreq} Hz`, 10, 35);
+
+        tPrev = t;
+        window.requestAnimationFrame(loop);
+      }
+
+      window.requestAnimationFrame(loop);
+
+      freqSlider.addEventListener('input', e => {
+        freq = Number(e.target.value);
+      });
+
+      sampleFreqSlider.addEventListener('input', e => {
+        sampleFreq = Number(e.target.value);
+      });
+    </script>
+  </body>
+</html>
